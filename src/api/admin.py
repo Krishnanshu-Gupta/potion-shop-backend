@@ -27,3 +27,4 @@ def get_shop_info():
         "shop_owner": "Potion Seller",
     }
 
+ 
