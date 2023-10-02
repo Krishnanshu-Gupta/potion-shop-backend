@@ -15,12 +15,15 @@ def get_catalog():
     quantity = result.first().num_red_potions
 
     # Can return a max of 20 items.
-    return [
-            {
-                "sku": "RED_POTION_0",
-                "name": "red potion",
-                "quantity": quantity,
-                "price": 50,
-                "potion_type": [100, 0, 0, 0],
-            }
+    if quantity > 0:
+        return [
+                {
+                    "sku": "RED_POTION_0",
+                    "name": "red potion",
+                    "quantity": quantity,
+                    "price": 50,
+                    "potion_type": [100, 0, 0, 0],
+                }
         ]
+    else:
+        return []
