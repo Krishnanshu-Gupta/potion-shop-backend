@@ -43,10 +43,11 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
-    #current logic: buy potions to have at least 15 of each color (in ml and potions)
+    #current logic: buy potions to have at least 20 of each color (in ml and potions)
+    wanted_potions = 20
     print(wholesale_catalog)
     sql = """SELECT num_red_potions, num_green_potions, num_blue_potions
-            ,num_red_ml, num_green_ml, num_blue_ml FROM global_inventory"""
+            ,num_red_ml, num_green_ml, num_blue_ml, gold FROM global_inventory"""
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text(sql))
 
@@ -54,28 +55,31 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     colors = ["red", "green", "blue"]
     potions = [getattr(row, f"num_{color}_potions") for color in colors]
     mls = [getattr(row, f"num_{color}_ml") for color in colors]
+    gold = row.gold
 
     lst = []
     for potion, ml, color in zip(potions, mls, colors):
-        maxAmt = 15 * 100
+        maxAmt = wanted_potions * 100
         buy_ml = maxAmt - (potion * 100) - ml
-        res = barrels_logic(wholesale_catalog, color, buy_ml)
+        res, gold_new = barrels_logic(wholesale_catalog, color, buy_ml, gold)
         if res is not []:
             lst.extend(res)
+        gold = gold_new
 
     return lst
 
-def barrels_logic(catalog, color, ml):
+def barrels_logic(catalog, color, ml, gold):
     purchase = []
     for barrel in catalog:
-        if barrel.potion_type == [100 if c == color else 0 for c in ["red", "green", "blue", "dark"]]:
+        if barrel.potion_type == [1 if c == color else 0 for c in ["red", "green", "blue", "dark"]]:
             ml_per_barrel = barrel.ml_per_barrel
             quantity_needed = ml // ml_per_barrel
             quantity = min(quantity_needed, barrel.quantity)
-            if quantity > 0:
+            if quantity > 0 and gold >= (quantity * barrel.price):
                 purchase.append({
                     "sku": barrel.sku,
                     "quantity": quantity
                 })
+                gold -= (barrel.quantity * barrel.price)
                 ml -= quantity * ml_per_barrel
-    return purchase
+    return purchase, gold
