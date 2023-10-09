@@ -31,7 +31,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
                 (0, 0, 100, 0): "blue",
             }
             color = color_mapping.get(tuple(barrel.potion_type), "other")
-            if color is not "other":
+            if color != "other":
                 result = connection.execute(
                     sqlalchemy.text(f"UPDATE global_inventory SET num_{color}_ml = num_{color}_ml + (:ml * :quantity), gold = gold - (:price * :quantity)"),
                     {"ml": barrel.ml_per_barrel, "quantity": barrel.quantity, "price": barrel.price}

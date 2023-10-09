@@ -27,7 +27,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
                 (0, 0, 100, 0): "blue",
             }
             color = color_mapping.get(tuple(potion.potion_type), "other")
-            if color is not "other":
+            if color != "other":
                 result = connection.execute(
                     sqlalchemy.text(f"UPDATE global_inventory SET num_{color}_potions = num_{color}_potions + :quantity, num_{color}_ml = num_{color}_ml - (:{color} * :quantity)"),
                     {"quantity": potion.quantity, "red": potion.potion_type[0], "green": potion.potion_type[1], "blue": potion.potion_type[2]}
