@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
@@ -62,20 +62,27 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     totalBought = 0
     totalPaid = 0
     for item, quantity in cart['items'].items():
-        #only get red potions
-        if item == "RED_POTION_0":
+        if item in ('RED_POTION_0', 'GREEN_POTION_0', 'BLUE_POTION_0'):
+            colors = ('red', 'green', 'blue')
+            index = ('RED_POTION_0', 'GREEN_POTION_0', 'BLUE_POTION_0').index(item)
+            color = colors[index]
             with db.engine.begin() as connection:
-                result = connection.execute(sqlalchemy.text("SELECT num_red_potions FROM global_inventory"))
-            inStore = result.first().num_red_potions
-            #if quantity > inStore:
-             #   raise HTTPException(status_code=500, detail="Not enough items for purchase")
+                result = connection.execute(sqlalchemy.text(
+                    f"SELECT num_{color}_potions FROM global_inventory")
+                )
+
+            inStore = getattr(result.first(), f"num_{color}_potions")
+            if quantity > inStore:
+                raise HTTPException(status_code = 500, detail = f"Not enough {color} potions for purchase")
             totalBought += quantity
-            totalPaid += quantity * 50 # hard coded value for red potion 0
+            totalPaid += quantity * 50 # hard coded value for potion 0's
 
             with db.engine.begin() as connection:
                 result = connection.execute(
-                    sqlalchemy.text("UPDATE global_inventory SET num_red_potions = num_red_potions - :toSell, gold = gold + (:toSell * :price)"),
+                    sqlalchemy.text(
+                        f"UPDATE global_inventory SET num_{color}_potions = num_{color}_potions - :toSell, gold = gold + (:toSell * :price)"),
                     {"toSell": quantity, "price": 50}
                 )
+
     carts.pop(cart_id)
     return {"total_potions_bought": totalBought, "total_gold_paid": totalPaid}

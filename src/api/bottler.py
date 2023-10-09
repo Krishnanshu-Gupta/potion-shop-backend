@@ -21,10 +21,17 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
     print(potions_delivered)
     with db.engine.begin() as connection:
         for potion in potions_delivered:
-            result = connection.execute(
-                sqlalchemy.text("UPDATE global_inventory SET num_red_potions = num_red_potions + :quantity, num_red_ml = num_red_ml - (:red * :quantity)"),
-                {"quantity": potion.quantity, "red": potion.potion_type[0]}
-            )
+            color_mapping = {
+                (100, 0, 0, 0): "red",
+                (0, 100, 0, 0): "green",
+                (0, 0, 100, 0): "blue",
+            }
+            color = color_mapping.get(tuple(potion.potion_type), "other")
+            if color is not "other":
+                result = connection.execute(
+                    sqlalchemy.text(f"UPDATE global_inventory SET num_{color}_potions = num_{color}_potions + :quantity, num_{color}_ml = num_{color}_ml - (:{color} * :quantity)"),
+                    {"quantity": potion.quantity, "red": potion.potion_type[0], "green": potion.potion_type[1], "blue": potion.potion_type[2]}
+                )
     return "OK"
 
 # Gets called 4 times a day
@@ -39,12 +46,24 @@ def get_bottle_plan():
     # Expressed in integers from 1 to 100 that must sum up to 100.
 
     # Initial logic: bottle all barrels into red potions.
+    sql = """SELECT num_red_ml, num_green_ml, num_blue_ml FROM global_inventory"""
     with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text("SELECT num_red_ml FROM global_inventory"))
+        result = connection.execute(sqlalchemy.text(sql))
 
-    return [
+    row = result.first()
+    red_data = gen_plan("red", row.num_red_ml)
+    blue_data = gen_plan("blue", row.num_blue_ml)
+    green_data = gen_plan("green", row.num_green_ml)
+
+    return red_data + green_data + blue_data
+
+def gen_plan(color, ml):
+    if ml >= 100:
+        return [
             {
-                "potion_type": [100, 0, 0, 0],
-                "quantity": result.first().num_red_ml // 100,
+                "potion_type": [100 if c == color else 0 for c in ["red", "green", "blue", "dark"]],
+                "quantity": ml // 100,
             }
         ]
+    else:
+        return []
