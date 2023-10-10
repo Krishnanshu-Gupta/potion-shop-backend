@@ -27,7 +27,7 @@ def gen_catalog(color, num_potions):
                 "sku": f"{color.upper()}_POTION_0",
                 "name": f"{color} potion",
                 "quantity": num_potions,
-                "price": 1, #price
+                "price": 30, #price
                 "potion_type": [100 if c == color else 0 for c in ["red", "green", "blue", "dark"]],
             }
         ]

@@ -58,7 +58,7 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
-    price = 1
+    price = 30
     cart = carts[cart_id]
     totalBought = 0
     totalPaid = 0
