@@ -58,6 +58,7 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
+    price = 1
     cart = carts[cart_id]
     totalBought = 0
     totalPaid = 0
@@ -75,13 +76,13 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             if quantity > inStore:
                 raise HTTPException(status_code = 500, detail = f"Not enough {color} potions for purchase")
             totalBought += quantity
-            totalPaid += quantity * 30 # hard coded value for potion 0's
+            totalPaid += quantity * price # hard coded value for potion 0's
 
             with db.engine.begin() as connection:
                 result = connection.execute(
                     sqlalchemy.text(
                         f"UPDATE global_inventory SET num_{color}_potions = num_{color}_potions - :toSell, gold = gold + (:toSell * :price)"),
-                    {"toSell": quantity, "price": 30}
+                    {"toSell": quantity, "price": price}
                 )
 
     carts.pop(cart_id)

@@ -70,6 +70,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     return lst
 
 def barrels_logic(catalog, color, ml, gold):
+    #sorted_catalog = sorted(catalog, key = lambda x: x.ml_per_barrel, reverse=True)
     purchase = []
     for barrel in catalog:
         if barrel.potion_type == [1 if c == color else 0 for c in ["red", "green", "blue", "dark"]]:
