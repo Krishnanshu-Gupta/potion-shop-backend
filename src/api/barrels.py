@@ -43,8 +43,9 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
-    #current logic: buy potions to have at least 20 of each color (in ml and potions)
-    wanted_potions = 20
+    #current logic: buy potions to have at least 30 of each color (in ml and potions)
+    #this means that if nearly all of the potions have been sold, then we can get a deal by buying the medium barrel
+    wanted_potions = 30
     print(wholesale_catalog)
     sql = """SELECT num_red_potions, num_green_potions, num_blue_potions
             ,num_red_ml, num_green_ml, num_blue_ml, gold FROM global_inventory"""
