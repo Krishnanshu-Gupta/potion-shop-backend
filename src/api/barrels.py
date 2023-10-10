@@ -26,9 +26,9 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
     with db.engine.begin() as connection:
         for barrel in barrels_delivered:
             color_mapping = {
-                (100, 0, 0, 0): "red",
-                (0, 100, 0, 0): "green",
-                (0, 0, 100, 0): "blue",
+                (1, 0, 0, 0): "red",
+                (0, 1, 0, 0): "green",
+                (0, 0, 1, 0): "blue",
             }
             color = color_mapping.get(tuple(barrel.potion_type), "other")
             if color != "other":
