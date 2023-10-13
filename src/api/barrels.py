@@ -29,6 +29,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
                 (1, 0, 0, 0): "red",
                 (0, 1, 0, 0): "green",
                 (0, 0, 1, 0): "blue",
+                (0, 0, 0, 1): "dark",
             }
             color = color_mapping.get(tuple(barrel.potion_type), "other")
             if color != "other":
@@ -44,25 +45,30 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
     #current logic: buy potions to have at least 30 of each color (in ml and potions)
-    #this means that if nearly all of the potions have been sold, then we can get a deal by buying the medium barrel
+    #this means that if nearly all of the potions have been sold, then we can get a deal by buying the larger sized barrels
     wanted_potions = 30
     print(wholesale_catalog)
-    sql = """SELECT num_red_potions, num_green_potions, num_blue_potions
-            ,num_red_ml, num_green_ml, num_blue_ml, gold FROM global_inventory"""
+    sql = "SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, gold FROM global_inventory"
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text(sql))
 
-    row = result.first()
-    colors = ["red", "green", "blue"]
-    potions = [getattr(row, f"num_{color}_potions") for color in colors]
-    mls = [getattr(row, f"num_{color}_ml") for color in colors]
-    gold = row.gold
+    sql = "SELECT potion_type, quantity FROM potion_inventory"
+    with db.engine.begin() as connection:
+        potions = connection.execute(sqlalchemy.text(sql))
+
+    colors = ["red", "green", "blue", "dark"]
+    row_global = result.first()
+    mls = [getattr(row_global, f"num_{color}_ml") for color in colors]
+    gold = row_global.gold
+    final_ml = []
+
+    for potion_type, quantity in potions:
+        num = max(wanted_potions - quantity, 0)
+        final_ml = [x + (y * num) for x, y in zip(mls, potion_type)]
 
     lst = []
-    for potion, ml, color in zip(potions, mls, colors):
-        maxAmt = wanted_potions * 100
-        buy_ml = maxAmt - (potion * 100) - ml
-        res, gold_new = barrels_logic(wholesale_catalog, color, buy_ml, gold)
+    for potion, ml, color in zip(potions, final_ml, colors):
+        res, gold_new = barrels_logic(wholesale_catalog, color, ml, gold)
         if res is not []:
             lst.extend(res)
         gold = gold_new
@@ -70,9 +76,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     return lst
 
 def barrels_logic(catalog, color, ml, gold):
-    #sorted_catalog = sorted(catalog, key = lambda x: x.ml_per_barrel, reverse=True)
+    sorted_catalog = sorted(catalog, key = lambda x: x.ml_per_barrel, reverse=True)
     purchase = []
-    for barrel in catalog:
+    for barrel in sorted_catalog:
         if barrel.potion_type == [1 if c == color else 0 for c in ["red", "green", "blue", "dark"]]:
             ml_per_barrel = barrel.ml_per_barrel
             quantity_needed = ml // ml_per_barrel
