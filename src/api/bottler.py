@@ -25,6 +25,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
                 (100, 0, 0, 0): "red",
                 (0, 100, 0, 0): "green",
                 (0, 0, 100, 0): "blue",
+                (0, 0, 0, 100): "dark",
             }
             color = color_mapping.get(tuple(potion.potion_type), "other")
             if color != "other":
@@ -41,11 +42,6 @@ def get_bottle_plan():
     Go from barrel to bottle.
     """
 
-    # Each bottle has a quantity of what proportion of red, blue, and
-    # green potion to add.
-    # Expressed in integers from 1 to 100 that must sum up to 100.
-
-    # Initial logic: bottle all barrels into red potions.
     sql = """SELECT num_red_ml, num_green_ml, num_blue_ml FROM global_inventory"""
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text(sql))
