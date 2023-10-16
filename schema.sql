@@ -10,6 +10,17 @@ create table
     constraint potion_inventory_pkey primary key (id)
   ) tablespace pg_default;
 
+INSERT INTO potion_inventory 
+  (sku, potion_type, quantity, price, name)
+VALUES 
+  ('RED_POTION', [100, 0, 0, 0], 0, 30, 'red potion'),
+  ('GREEN_POTION', [0, 100, 0, 0], 0, 30, 'green potion'),
+  ('BLUE_POTION', [0, 0, 100, 0], 0, 30, 'blue potion'),
+  ('DARK_POTION', [0, 0, 0, 100], 0, 30, 'dark potion'),
+  ('MIXED_POTION', [25, 25, 25, 25], 0, 30, 'mixed potion');
+
+
+
 #Global_inventory:
 create table
   public.global_inventory (
@@ -22,6 +33,12 @@ create table
     constraint global_inventory_pkey primary key (id)
   ) tablespace pg_default;
 
+INSERT INTO global_inventory 
+  (num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, gold)
+VALUES (0, 0, 0, 0, 100);
+
+
+
 #Carts:
 create table
   public.carts (
@@ -30,6 +47,12 @@ create table
     payment text null,
     constraint carts_pkey primary key (id)
   ) tablespace pg_default;
+
+INSERT INTO carts 
+  (customer_name, payment)
+VALUES ('Eldric Thunderstrike', 'testPayment');
+
+
 
 #Cart_items:
 create table
@@ -41,3 +64,9 @@ create table
     constraint cart_items_pkey primary key (id),
     constraint cart_items_cart_id_fkey foreign key (cart_id) references carts (id)
   ) tablespace pg_default;
+
+INSERT INTO cart_items 
+  (cart_id, item_sku, quantity)
+VALUES 
+  (1, 'RED_POTION', 5),
+  (1, 'GREEN_POTION', 3);
