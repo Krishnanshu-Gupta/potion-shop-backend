@@ -54,16 +54,14 @@ def get_bottle_plan():
     lst = []
     for potion_type, quantity in potions:
         num = max(wanted_potions - quantity, 0)
-        ml_res = [num * ml for ml in potion_type]
         max_potions_made = wanted_potions
         for ml_have, ml_potion in zip(mls, potion_type):
             if ml_potion != 0:
                 num_potions = ml_have // ml_potion
                 max_potions_made = min(max_potions_made, min(num_potions, num))
-
-        lst.append({
-            "potion_type": potion_type,
-            "quantity": max_potions_made
-        })
-
+        if max_potions_made > 0:
+            lst.append({
+                "potion_type": potion_type,
+                "quantity": max_potions_made
+            })
     return lst
