@@ -62,9 +62,10 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     for potion_type, quantity in potions:
         num = max(wanted_potions - quantity, 0)
-        ml_temp = [x + (y * num) for x, y in zip(mls, potion_type)]
+        ml_temp = [(y * num) for y in potion_type]
         final_ml = ml_temp if not final_ml else [x + y for x, y in zip(ml_temp, final_ml)]
-        
+
+    final_ml = [max(x - y, 0) for x, y in zip(final_ml, mls)]
     lst = []
     for ml, color in zip(final_ml, colors):
         res, gold_new = barrels_logic(wholesale_catalog, color, ml, gold)
