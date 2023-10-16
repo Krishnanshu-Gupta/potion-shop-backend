@@ -12,11 +12,9 @@ router = APIRouter(
 
 class Barrel(BaseModel):
     sku: str
-
     ml_per_barrel: int
     potion_type: list[int]
     price: int
-
     quantity: int
 
 @router.post("/deliver")
@@ -64,10 +62,11 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     for potion_type, quantity in potions:
         num = max(wanted_potions - quantity, 0)
-        final_ml = [x + (y * num) for x, y in zip(mls, potion_type)]
-
+        ml_temp = [x + (y * num) for x, y in zip(mls, potion_type)]
+        final_ml = ml_temp if not final_ml else [x + y for x, y in zip(ml_temp, final_ml)]
+        
     lst = []
-    for potion, ml, color in zip(potions, final_ml, colors):
+    for ml, color in zip(final_ml, colors):
         res, gold_new = barrels_logic(wholesale_catalog, color, ml, gold)
         if res is not []:
             lst.extend(res)
