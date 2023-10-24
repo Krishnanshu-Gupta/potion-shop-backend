@@ -44,7 +44,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     #current logic: buy potions to have at least 30 of each color (in ml and potions)
     #this means that if nearly all of the potions have been sold, then we can get a deal by buying the larger sized barrels
     wanted_potions = 30
-    #print(wholesale_catalog)
+    print(wholesale_catalog)
     sql = "SELECT id, amount, type FROM ml_ledger"
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text(sql))
@@ -92,20 +92,13 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         final_ml = ml_temp if not final_ml else [x + y for x, y in zip(ml_temp, final_ml)]
 
     final_ml = [max(x - y, 0) for x, y in zip(final_ml, mls)]
-    print(final_ml)
     lst = []
     for ml, color in zip(final_ml, colors):
-        print(color, ml, gold)
         res, gold_new = barrels_logic(wholesale_catalog, color, ml, gold)
-        print(res, gold_new)
-        print()
-        print()
-        print()
         if res is not []:
             lst.extend(res)
         gold = gold_new
 
-    print(lst)
     return lst
 
 def barrels_logic(catalog, color, ml, gold):
@@ -116,10 +109,6 @@ def barrels_logic(catalog, color, ml, gold):
             ml_per_barrel = barrel.ml_per_barrel
             quantity_needed = ml // ml_per_barrel
             quantity = min(quantity_needed, barrel.quantity)
-            print(quantity_needed, quantity)
-            print(barrel.price)
-            print(barrel.price * quantity)
-            print()
             if quantity > 0 and gold >= (quantity * barrel.price):
                 purchase.append({
                     "sku": barrel.sku,
