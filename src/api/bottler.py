@@ -21,15 +21,25 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
     print(potions_delivered)
     with db.engine.begin() as connection:
         for potion in potions_delivered:
-            result = connection.execute(
-                sqlalchemy.text(f"UPDATE potion_inventory SET quantity = quantity + :quantity WHERE potion_type = :potion_type"),
-                {"quantity": potion.quantity, "potion_type": potion.potion_type},
+            connection.execute(
+                sqlalchemy.text("""INSERT INTO potion_ledger (amount, potion_id, shop_name, description)
+                                VALUES (:amount, (SELECT id FROM potion_inventory WHERE potion_type = :potion_type),
+                                :shop_name, :description)"""),
+                {"amount": potion.quantity, "potion_type": potion.potion_type, "shop_name": "bottler",
+                 "description": "Converting: " + str(potion.potion_type)}
             )
-            result = connection.execute(
-                sqlalchemy.text(f"UPDATE global_inventory SET num_red_ml = num_red_ml - :red_ml, num_green_ml = num_green_ml - :green_ml, num_blue_ml = num_blue_ml - :blue_ml, num_dark_ml = num_dark_ml - :dark_ml"),
-                {"red_ml": potion.potion_type[0] * potion.quantity, "green_ml": potion.potion_type[1] * potion.quantity,
-                "blue_ml": potion.potion_type[2] * potion.quantity, "dark_ml": potion.potion_type[3] * potion.quantity},
-            )
+            i = 0
+            for ml in potion.potion_type:
+                lst = [0, 0, 0, 0]
+                lst[i] += 1
+                i += 1
+                if(ml > 0):
+                    connection.execute(
+                        sqlalchemy.text("""INSERT INTO ml_ledger (amount, type, description)
+                                        VALUES (:amount, :type, :description)"""),
+                        {"amount": ml * potion.quantity * -1, "type": lst,
+                        "description": "Converting: " + str(potion.potion_type) + ", how many: " + str(potion.quantity)}
+                    )
     return "OK"
 
 # Gets called 4 times a day
@@ -38,21 +48,45 @@ def get_bottle_plan():
     """
     Go from barrel to bottle.
     """
-    sql = """SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory"""
+    sql = "SELECT id, amount, type FROM ml_ledger"
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text(sql))
 
-    sql = "SELECT potion_type, quantity FROM potion_inventory"
+    colors = ["red", "green", "blue", "dark"]
+    mls = [0, 0, 0, 0]
+    for row in result:
+        potion_type = row.type
+        amount = row.amount
+        for i, color in enumerate(colors):
+            mls[i] += potion_type[i] * amount
+
+
+    sql = """SELECT amount, potion_type
+            FROM potion_ledger
+            JOIN potion_inventory ON potion_ledger.potion_id = potion_inventory.id
+            ORDER BY potion_ledger.created_at"""
     with db.engine.begin() as connection:
         potions = connection.execute(sqlalchemy.text(sql))
 
-    colors = ["red", "green", "blue", "dark"]
-    row_global = result.first()
-    mls = [getattr(row_global, f"num_{color}_ml") for color in colors]
+    potion_tots = []
+    for row in potions:
+        flag = False
+        for item in potion_tots:
+            if item['potion_type'] == row.potion_type:
+                flag = True
+                item['amount'] += row.amount
+
+        if flag == False:
+            potion_tots.append({
+                "amount": row.amount,
+                "potion_type": row.potion_type,
+            })
 
     wanted_potions = 30
     lst = []
-    for potion_type, quantity in potions:
+    for item in potion_tots:
+        potion_type = item['potion_type']
+        quantity = item['amount']
         num = max(wanted_potions - quantity, 0)
         max_potions_made = wanted_potions
         for ml_have, ml_potion in zip(mls, potion_type):
@@ -64,4 +98,6 @@ def get_bottle_plan():
                 "potion_type": potion_type,
                 "quantity": max_potions_made
             })
+            mls = [ml - (potion_type[idx] * max_potions_made) if potion_type[idx] != 0 else ml for idx, ml in enumerate(mls)]
     return lst
+
