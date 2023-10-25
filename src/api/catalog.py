@@ -22,14 +22,14 @@ def get_catalog():
         for item in ledger_tots:
             if item['sku'] == row.sku:
                 flag = True
-                item['amount'] += row.amount
+                item['quantity'] += row.amount
 
         if flag == False:
             ledger_tots.append({
-                "amount": row.amount,
+                "quantity": row.amount,
                 "sku": row.sku,
                 "potion_type": row.potion_type,
                 "price": row.price
             })
 
-    return [item for item in ledger_tots if item['amount'] > 0]
+    return [item for item in ledger_tots if item['quantity'] > 0]
