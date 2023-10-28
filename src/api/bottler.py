@@ -82,9 +82,11 @@ def get_bottle_plan():
                 "potion_type": row.potion_type,
             })
 
+    rev = potion_tots[::-1]
+
     wanted_potions = 30
     lst = []
-    for item in potion_tots:
+    for item in rev:
         potion_type = item['potion_type']
         quantity = item['amount']
         num = max(wanted_potions - quantity, 0)
