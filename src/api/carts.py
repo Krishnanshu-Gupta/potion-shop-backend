@@ -58,7 +58,7 @@ def search_orders(
     sql = """SELECT shop_name, description, name, amount, sku, created_at
             FROM potion_ledger
             JOIN potion_inventory ON potion_ledger.potion_id = potion_inventory.id
-            WHERE shop_name IS NOT NULL AND shop_name != 'bottler'
+            WHERE shop_name IS NOT NULL AND shop_name != 'bottler' AND shop_name != 'reset'
                 AND (:customer_name = '' OR shop_name ILIKE :customer_name)
                 AND (:potion_sku = '' OR name ILIKE :potion_sku)
             """
