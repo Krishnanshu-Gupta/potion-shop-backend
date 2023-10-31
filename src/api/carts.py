@@ -60,7 +60,7 @@ def search_orders(
             JOIN potion_inventory ON potion_ledger.potion_id = potion_inventory.id
             WHERE shop_name IS NOT NULL AND shop_name != 'bottler'
                 AND (:customer_name = '' OR shop_name ILIKE :customer_name)
-                AND (:potion_sku = '' OR sku ILIKE :potion_sku)
+                AND (:potion_sku = '' OR name ILIKE :potion_sku)
             """
 
     order = "DESC"
@@ -71,7 +71,7 @@ def search_orders(
     if sort_col == search_sort_options.line_item_total:
         col = "CAST(SUBSTRING(description FROM POSITION('for:' IN description) + 4) AS INTEGER)"
     elif sort_col == search_sort_options.item_sku:
-        col = "potion_inventory.sku"
+        col = "potion_inventory.name"
     elif sort_col == search_sort_options.customer_name:
         col = "potion_ledger.shop_name"
 
