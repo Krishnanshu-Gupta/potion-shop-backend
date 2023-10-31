@@ -93,13 +93,16 @@ def search_orders(
        ind += 1
 
     num_res = len(lst)
-    num_pages = (num_res + 4) // 5
+    results_per_page = 5
+    num_pages = (num_res + results_per_page - 1) // results_per_page
     page = int(search_page)
+    start_index = (page - 1) * results_per_page
+    end_index = page * results_per_page
 
     return {
-        "previous": page - 1 if page > 1 else "",
-        "next": page + 1 if page < num_pages and num_pages > 1 else "",
-        "results": lst[(page - 1) * 5 : page * 5]
+        "previous": str(page - 1) if page > 1 else "",
+        "next": str(page + 1) if page < num_pages else "",
+        "results": lst[start_index : end_index]
     }
 
 
