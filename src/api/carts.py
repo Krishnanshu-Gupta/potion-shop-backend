@@ -99,7 +99,7 @@ def search_orders(
     return {
         "previous": page - 1 if page > 1 else "",
         "next": page + 1 if page < num_pages and num_pages > 1 else "",
-        "results": lst[(page - 1) * 5, page * 5]
+        "results": lst[(page - 1) * 5 : page * 5]
     }
 
 
