@@ -27,7 +27,7 @@ class search_sort_order(str, Enum):
 def search_orders(
     customer_name: str = "",
     potion_sku: str = "",
-    search_page: str = "",
+    search_page: str = "1",
     sort_col: search_sort_options = search_sort_options.timestamp,
     sort_order: search_sort_order = search_sort_order.desc,
 ):
@@ -92,10 +92,14 @@ def search_orders(
        })
        ind += 1
 
+    num_res = len(lst)
+    num_pages = (num_res + 4) // 5
+    page = int(search_page)
+
     return {
-        "previous": "",
-        "next": "",
-        "results": lst
+        "previous": page - 1 if page > 1 else "",
+        "next": page + 1 if page < num_pages and num_pages > 1 else "",
+        "results": lst[(page - 1) * 5, page * 5]
     }
 
 
