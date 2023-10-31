@@ -4,12 +4,100 @@ from src.api import auth
 import sqlalchemy
 from src import database as db
 import uuid
+import re
+from enum import Enum
 
 router = APIRouter(
     prefix="/carts",
     tags=["cart"],
     dependencies=[Depends(auth.get_api_key)],
 )
+
+class search_sort_options(str, Enum):
+    customer_name = "customer_name"
+    item_sku = "item_sku"
+    line_item_total = "line_item_total"
+    timestamp = "timestamp"
+
+class search_sort_order(str, Enum):
+    asc = "asc"
+    desc = "desc"
+
+@router.get("/search/", tags=["search"])
+def search_orders(
+    customer_name: str = "",
+    potion_sku: str = "",
+    search_page: str = "",
+    sort_col: search_sort_options = search_sort_options.timestamp,
+    sort_order: search_sort_order = search_sort_order.desc,
+):
+    """
+    Search for cart line items by customer name and/or potion sku.
+
+    Customer name and potion sku filter to orders that contain the
+    string (case insensitive). If the filters aren't provided, no
+    filtering occurs on the respective search term.
+
+    Search page is a cursor for pagination. The response to this
+    search endpoint will return previous or next if there is a
+    previous or next page of results available. The token passed
+    in that search response can be passed in the next search request
+    as search page to get that page of results.
+
+    Sort col is which column to sort by and sort order is the direction
+    of the search. They default to searching by timestamp of the order
+    in descending order.
+
+    The response itself contains a previous and next page token (if
+    such pages exist) and the results as an array of line items. Each
+    line item contains the line item id (must be unique), item sku,
+    customer name, line item total (in gold), and timestamp of the order.
+    Your results must be paginated, the max results you can return at any
+    time is 5 total line items.
+    """
+    sql = """SELECT shop_name, description, name, amount, sku, created_at
+            FROM potion_ledger
+            JOIN potion_inventory ON potion_ledger.potion_id = potion_inventory.id
+            WHERE shop_name IS NOT NULL AND shop_name != 'bottler'
+                AND (:customer_name = '' OR shop_name ILIKE :customer_name)
+                AND (:potion_sku = '' OR sku ILIKE :potion_sku)
+            """
+
+    order = "DESC"
+    if sort_order == search_sort_order.asc:
+        order = "ASC"
+
+    col = "potion_ledger.created_at"
+    if sort_col == search_sort_options.line_item_total:
+        col = "CAST(SUBSTRING(description FROM POSITION('for:' IN description) + 4) AS INTEGER)"
+    elif sort_col == search_sort_options.item_sku:
+        col = "potion_inventory.sku"
+    elif sort_col == search_sort_options.customer_name:
+        col = "potion_ledger.shop_name"
+
+    sql += "ORDER BY " + col + " " + order
+    with db.engine.begin() as connection:
+        result = connection.execute(sqlalchemy.text(sql),
+                                    {"customer_name": customer_name, "potion_sku": potion_sku})
+
+    lst = []
+    ind = 1
+    for row in result:
+       lst.append({
+           "line_item_id": ind,
+           "item_sku": str(row.amount * -1) + " " + row.name + (" potions" if (row.amount * -1) > 1 else " potion"),
+           "customer_name": row.shop_name,
+           "line_item_total": int(re.search(r'for:\s*(\d+)', row.description).group(1)),
+           "timestamp": row.created_at
+       })
+       ind += 1
+
+    return {
+        "previous": "",
+        "next": "",
+        "results": lst
+    }
+
 
 class NewCart(BaseModel):
     customer: str

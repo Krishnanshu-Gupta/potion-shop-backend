@@ -9,7 +9,7 @@ def get_catalog():
     """
     Each unique item combination must have only a single price.
     """
-    sql = """SELECT amount, sku, potion_type, price
+    sql = """SELECT amount, sku, potion_type, price, name
             FROM potion_ledger
             JOIN potion_inventory ON potion_ledger.potion_id = potion_inventory.id
             ORDER BY potion_ledger.created_at"""
@@ -27,9 +27,12 @@ def get_catalog():
         if flag == False:
             ledger_tots.append({
                 "quantity": row.amount,
+                "name": row.name,
                 "sku": row.sku,
                 "potion_type": row.potion_type,
                 "price": row.price
             })
 
-    return [item for item in ledger_tots if item['quantity'] > 0]
+    ledger_tots.sort(key=lambda item: item['quantity'] * item['price'], reverse = True)
+    top6 = ledger_tots[:6]
+    return [item for item in top6 if item['quantity'] > 0]
